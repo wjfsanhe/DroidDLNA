@@ -16,18 +16,25 @@ import com.zxt.dlna.dms.ContentTree;
 import com.zxt.dlna.util.FileUtil;
 import com.zxt.dlna.util.ImageUtil;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 import com.zxt.dlna.R;
 
@@ -36,6 +43,7 @@ public class StartActivity extends Activity {
     public static final int GET_IP_FAIL = 0;
 
     public static final int GET_IP_SUC = 1;
+    private static final int MY_PERMISSION_CODE = 0xa0a0;
 
     private Context mContext;
 
@@ -76,16 +84,79 @@ public class StartActivity extends Activity {
         }
 
     };
+    private void setupMachine(){
+        createFolder();
+        getVideoFilePaths();
+        createVideoThumb();
+        getIp();
+    }
 
+
+    private void openSettings(){
+        Uri packageURI = Uri.parse("package:com.zxt.dlna");
+        Intent intent =  new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,packageURI);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_lay);
         mContext = this;
-        createFolder();
-        getVideoFilePaths();
-        createVideoThumb();
-        getIp();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                Toast.makeText(this, "open settins to enable permission", Toast.LENGTH_LONG).show();
+                openSettings();
+
+            } else {
+
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        MY_PERMISSION_CODE);
+
+                // MY_PERMISSION_CODE is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+
+
+        } else {
+            setupMachine();
+        }
+
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSION_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    setupMachine();
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request.
+        }
     }
 
 
